@@ -35,7 +35,7 @@
 		scheduler.init("scheduler_here", new Date(),"month");
 		scheduler.load("data/api.php");
 
-		var dp = new dataProcessor("data/api.php");
+		let dp = new dataProcessor("data/api.php");
 		dp.init(scheduler);
 		dp.setTransactionMode("JSON"); // use to transfer data with JSON
 	</script>
