@@ -36,7 +36,7 @@
 		scheduler.init("scheduler_here", new Date(), "month");
 		scheduler.load("data/api_recurring.php");
 
-		var dp = new dataProcessor("data/api_recurring.php");
+		let dp = new dataProcessor("data/api_recurring.php");
 		dp.init(scheduler);
 		dp.setTransactionMode("JSON"); // use to transfer data with JSON
 	</script>
