@@ -35,10 +35,10 @@
 			recurring: true
 		});
 		scheduler.setLoadMode("day");
-		scheduler.init("scheduler_here", new Date(), "month");
+		scheduler.init("scheduler_here", new Date(), "week");
 		scheduler.load("data/api_recurring.php");
 
-		var dp = scheduler.createDataProcessor({
+		const dp = scheduler.createDataProcessor({
 			url: "data/api_recurring.php",
 			mode: "JSON"
 		});

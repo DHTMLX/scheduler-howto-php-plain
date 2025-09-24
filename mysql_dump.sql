@@ -12,12 +12,14 @@ CREATE TABLE `events` (
 
 DROP TABLE IF EXISTS `recurring_events`;
 CREATE TABLE `recurring_events` (
-  `id` int(11) AUTO_INCREMENT,
+  `id` bigint(20) unsigned AUTO_INCREMENT,
+  `text` varchar(255) DEFAULT NULL,
   `start_date` datetime NOT NULL,
   `end_date` datetime NOT NULL,
-  `text` varchar(255) DEFAULT NULL,
-  `event_pid` int(11) DEFAULT 0,
-  `event_length` bigint(20) unsigned DEFAULT 0,
-  `rec_type` varchar(25) DEFAULT '""',
+  `duration` bigint(20) unsigned DEFAULT NULL,
+  `rrule` varchar(255) DEFAULT NULL,
+  `recurring_event_id` varchar(255) DEFAULT NULL,
+  `original_start` varchar(255) DEFAULT NULL,
+  `deleted` BOOLEAN DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) DEFAULT CHARSET=utf8;

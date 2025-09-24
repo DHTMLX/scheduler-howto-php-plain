@@ -22,18 +22,21 @@ function create($db, $event){
 		`start_date`=?,
 		`end_date`=?,
 		`text`=?,
-
-		`event_pid`=?,
-		`event_length`=?,
-		`rec_type`=?";
+		`duration`=?,
+		`rrule`=?,
+		`recurring_event_id`=?,
+		`original_start`=?,
+		`deleted`=?";
 	$queryParams = [
 		$event["start_date"],
 		$event["end_date"],
 		$event["text"],
 		// recurring events columns
-		$event["event_pid"] ? $event["event_pid"] : 0,
-		$event["event_length"] ? $event["event_length"] : 0,
-		$event["rec_type"]
+		$event["duration"] ? $event["duration"] : null,
+		$event["rrule"] ? $event["rrule"] : null,
+		$event["recurring_event_id"] ? $event["recurring_event_id"] : null,
+		$event["original_start"] ? $event["original_start"] : null,
+		$event["deleted"] = array_key_exists("deleted", $event) ? $event["deleted"] : null,
 	];
 
 	$query = $db->prepare($queryText);
@@ -47,9 +50,11 @@ function update($db, $event, $id){
 		`start_date`=?,
 		`end_date`=?,
 		`text`=?,
-		`event_pid`=?,
-		`event_length`=?,
-		`rec_type`=?
+		`duration`=?,
+		`rrule`=?,
+		`recurring_event_id`=?,
+		`original_start`=?,
+		`deleted`=?
 		WHERE `id`=?";
 
 	$queryParams = [
@@ -57,15 +62,17 @@ function update($db, $event, $id){
 		$event["end_date"],
 		$event["text"],
 
-		$event["event_pid"] ? $event["event_pid"] : 0,
-		$event["event_length"] ? $event["event_length"] : 0,
-		$event["rec_type"],//!
+		$event["duration"] ? $event["duration"] : null,
+		$event["rrule"] ? $event["rrule"] : null,
+		$event["recurring_event_id"] ? $event["recurring_event_id"] : null,
+		$event["original_start"] ? $event["original_start"] : null,
+		$event["deleted"] ? $event["deleted"] : null,
 		$id
 	];
-	if ($event["rec_type"] && $event["rec_type"] != "none") {
-		//all modified occurrences must be deleted when you update recurring series
-		//https://docs.dhtmlx.com/scheduler/server_integration.html#savingrecurringevents
-		$subQueryText = "DELETE FROM `recurring_events` WHERE `event_pid`=? ;";
+	if ($event["rrule"] && $event["recurring_event_id"] == null) {
+		//all modified occurrences must be deleted when you update recurring  series
+		//https://docs.dhtmlx.com/scheduler/server_integration.html#recurringevents
+		$subQueryText = "DELETE FROM `events` WHERE `recurring_event_id`=? ;";
 		$subQuery = $db->prepare($subQueryText);
 		$subQuery->execute([$id]);
 	}
@@ -82,26 +89,24 @@ function delete($db, $id){
 	$subQuery->execute([$id]);
 	$event = $subQuery->fetch();
 
-	if ($event["event_pid"]) {
+	if ($event["recurring_event_id"]) {
 		// deleting a modified occurrence from a recurring series
 		// If an event with the event_pid value was deleted - it needs updating
 		// with rec_type==none instead of deleting.
-		$subQueryText="UPDATE `recurring_events` SET `rec_type`='none' WHERE `id`=?;";
+		$subQueryText="UPDATE `recurring_events` SET `deleted`= 1 WHERE `id`=?;";
 		$subQuery = $db->prepare($subQueryText);
 		$subQuery->execute([$id]);
-
-	}else{
-		if ($event["rec_type"] && $event["rec_type"] != "none") {//!
-			// if a recurring series deleted, delete all modified occurrences of the series
-			$subQueryText = "DELETE FROM `recurring_events` WHERE `event_pid`=? ;";
-			$subQuery = $db->prepare($subQueryText);
-			$subQuery->execute([$id]);
+  }else{
+		if ($event["rrule"]) {
+				// if a recurring series deleted, delete all modified occurrences
+				// of the series
+				$subQueryText = "DELETE FROM `recurring_events` WHERE `recurring_event_id`=? ;";
+				$subQuery = $db->prepare($subQueryText);
+				$subQuery->execute([$id]);
 		}
-
 		/*
 		end of recurring events data processing
 		*/
-
 		$queryText = "DELETE FROM `recurring_events` WHERE `id`=? ;";
 		$query = $db->prepare($queryText);
 		$query->execute([$id]);
@@ -128,9 +133,9 @@ try {
 				$databaseId = create($db, $body);
 				$result["tid"] = $databaseId;
 				// delete a single occurrence from  recurring series
-				if ($body["rec_type"] === "none") {
-					$result["action"] = "deleted";//!
-				}
+				if (isset($body["deleted"]) && $body["deleted"]) {
+          $result["action"] = "deleted";
+        }
 			} elseif($action == "updated") {
 				update($db, $body, $id);
 			} elseif($action == "deleted") {
